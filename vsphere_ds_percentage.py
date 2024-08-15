@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
+"""Nagios Check for a vSphere datastore, by percentage used. """
 import json
 import subprocess
 import sys
 import os
 import argparse
+from ast import literal_eval
 import yaml
 
-def validate_config(args, config):
+def validate_host(args, config):
+    """Validates user input for vSphere host"""
     if args.host:
         host = args.host
     elif "GOVC_URL" in config:
@@ -16,7 +19,10 @@ def validate_config(args, config):
     else:
         print("No vSphere host set - check config!")
         sys.exit(3)
+    return host
 
+def validate_username(args, config):
+    """ Validates user input for vSphere username """
     if args.username:
         username = args.username
     elif "GOVC_USERNAME" in config:
@@ -26,7 +32,10 @@ def validate_config(args, config):
     else:
         print("No vSphere username set - check config!")
         sys.exit(3)
+    return username
 
+def validate_password(args, config):
+    """ Validates user input for vSphere password"""
     if args.password:
         password = args.password
     elif "GOVC_PASSWORD" in config:
@@ -36,21 +45,35 @@ def validate_config(args, config):
     else:
         print("No vSphere password set - check config!")
         sys.exit(3)
+    return password
 
+def validate_config(args, config):
+    """
+    Takes user input and validates the config. Config precedence flag>config
+    file>environment variable.
+    """
+    valid_host = validate_host(args, config)
+    valid_username = validate_username(args, config)
+    valid_password = validate_password(args, config)
+
+    insecure = False
     if args.insecure is False:
         if "GOVC_INSECURE" in config:
             insecure = bool(config['GOVC_INSECURE'])
         elif os.environ.get('GOVC_INSECURE'):
-            insecure = bool(eval(os.environ.get('GOVC_INSECURE')))
+            insecure = bool(literal_eval(os.environ.get('GOVC_INSECURE')))
     else:
         insecure = args.insecure
 
-    valid_config = {"host": host, "username": username, "password": password,
+    valid_config = {"host": valid_host, "username": valid_username, "password":
+                    valid_password,
                     "insecure": insecure}
 
     return valid_config
 
 def get_datastore_info(dsinfo, datastore, warn_percent, crit_percent):
+    """ Gets the used percentage for a selected datastore from govc json output
+    """
     status_code = 3
     status_text = "UNKNOWN: Datastore " + datastore + " Not Found"
     used_percent = None
@@ -76,8 +99,9 @@ def get_datastore_info(dsinfo, datastore, warn_percent, crit_percent):
     return status
 
 def parse_arguments():
+    """Parses the arguments passed to the script """
     parser = argparse.ArgumentParser(
-            prog='vsphere-ds-percentage.py',
+            prog='vsphere_ds_percentage.py',
             description='Nagios check script for the percentage used of a vSphere datastore')
 
     parser.add_argument('-H', '--host',
@@ -89,7 +113,8 @@ def parse_arguments():
     parser.add_argument('-k', '--insecure',
                         action='store_true',
                         default=False,
-                        help='Don\'t verify SSL certificates for the vSphere host | GOVC_INSECURE (boolean)')
+                        help="""Don\'t verify SSL certificates for the vSphere host | GOVC_INSECURE
+                        (boolean)""")
     parser.add_argument('-f', '--file',
                         help='A yaml-formatted config file')
     parser.add_argument('-w', '--warn', '--warning',
@@ -101,47 +126,55 @@ def parse_arguments():
     parser.add_argument('datastore',
                         help='The name of the datastore to check')
 
-    args = parser.parse_args()
-    return args
+    parsed_args = parser.parse_args()
+    return parsed_args
 
-args = parse_arguments()
+def main():
+    """Validates user input and checks vSphere for percentage used of a
+    specified datastore.
+    """
+    _args = parse_arguments()
 
-if args.file:
+    if _args.file:
+        try:
+            with open(_args.file, 'r', encoding='utf8') as config_file:
+                _config = yaml.safe_load(config_file)
+        except IOError:
+            _config = {}
+    else:
+        _config = {}
+
+    _valid_config = validate_config(_args, _config)
+
+    _datastore = _args.datastore
+
+    _warn_percent = _args.warn
+    _crit_percent = _args.crit
+
+    command = "govc datastore.info -json"
+
+    os.environ['GOVC_URL'] = _valid_config['host']
+    os.environ['GOVC_USERNAME'] = _valid_config['username']
+    os.environ['GOVC_PASSWORD'] = _valid_config['password']
+    os.environ['GOVC_INSECURE'] = str(_valid_config['insecure'])
+
     try:
-        config = yaml.safe_load(open(args.file))
-    except Exception:
-        config = {}
-        pass
-else:
-    config = {}
+        output = subprocess.check_output(command, shell=True, text=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as exc:
+        print("VSPHERE_DATASTORE UNKNOWN: ", exc.output, end='', sep='')
+        sys.exit(3)
 
-valid_config = validate_config(args, config)
+    _dsinfo = json.loads(output)
 
-datastore = args.datastore
+    output = get_datastore_info(_dsinfo, _datastore, _warn_percent, _crit_percent)
+    if output["used_percent"] is not None:
+        print("VSPHERE_DATASTORE ", output['status_text'],  " Used: ",
+              output["used_percent"], "%", sep='')
+        sys.exit(output['status_code'])
+    else:
+        print("VSPHERE_DATASTORE ", output['status_text'], sep='')
+        sys.exit(output['status_code'])
 
-warn_percent = args.warn
-crit_percent = args.crit
+if __name__ == "__main__":
 
-command = "govc datastore.info -json"
-
-os.environ['GOVC_URL'] = valid_config['host']
-os.environ['GOVC_USERNAME'] = valid_config['username']
-os.environ['GOVC_PASSWORD'] = valid_config['password']
-os.environ['GOVC_INSECURE'] = str(valid_config['insecure'])
-
-try:
-    output = subprocess.check_output(command, shell=True, text=True, stderr=subprocess.STDOUT)
-except subprocess.CalledProcessError as exc:
-    print("VSPHERE_DATASTORE UNKNOWN: ", exc.output, end='', sep='')
-    sys.exit(status_code)
-
-dsinfo = json.loads(output)
-
-output = get_datastore_info(dsinfo, datastore, warn_percent, crit_percent)
-if output["used_percent"] is not None:
-    print("VSPHERE_DATASTORE ", output['status_text'],  " Used: ",
-          output["used_percent"], "%", sep='')
-    sys.exit(output['status_code'])
-else:
-    print("VSPHERE_DATASTORE ", output['status_text'], sep='')
-    sys.exit(output['status_code'])
+    main()
