@@ -1,0 +1,5 @@
+---
+GOVC_URL: some.f.q.d.n 
+GOVC_USERNAME: someuser@somesite.com
+GOVC_PASSWORD: thisIsNotAP@ssword
+GOVC_INSECURE: 1
