@@ -30,7 +30,7 @@ Requires Python 3.
 Requires [`govc`](https://github.com/vmware/govmomi/tree/main/govc) available on the `$PATH` for the user running the `nagios` process. 
 
 See [`requirements.txt`](requirements.txt) for Python dependencies. I recommend using your system package manager to install `pyyaml`, which is the only current dependency:  
-```
+```shell
 dnf install python3-pyyaml #Red Hat variants
 apt install python3-yaml #Debian variants
 ```
