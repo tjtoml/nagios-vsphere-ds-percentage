@@ -98,6 +98,35 @@ def get_datastore_info(dsinfo, datastore, warn_percent, crit_percent):
               "used_percent": used_percent}
     return status
 
+def get_all_datastore_info(dsinfo, warn_percent, crit_percent):
+    """ Gets the used percentage for all datastores from govc json output
+    """
+    status_code = 0
+    status_text = "UNKNOWN"
+    used_percent = None
+    combined_status = 0
+
+    for ds in dsinfo['datastores']:
+        free_space = ds['summary']['freeSpace']
+        capacity = ds['summary']['capacity']
+        used_percent = round((1 - (free_space / capacity)) * 100, 1)
+        datastore = ds['name']
+
+        if used_percent >= crit_percent:
+            status_text = "CRITICAL: " + datastore
+            status_code = 2
+        elif used_percent >= warn_percent:
+            status_text = "WARNING: " + datastore
+            status_code = 1
+        else:
+            status_text = "OK: " + datastore
+            status_code = 0
+        print("VSPHERE_DATASTORE ", status_text,  " Used: ",
+            used_percent, "%", sep='')
+        combined_status = max(combined_status, status_code)
+    sys.exit(combined_status)
+
+
 def parse_arguments():
     """Parses the arguments passed to the script """
     parser = argparse.ArgumentParser(
@@ -123,7 +152,7 @@ def parse_arguments():
     parser.add_argument('-c', '--crit', '--critical',
                         help='The percentage at which a datastore will be in a CRITICAL state',
                         type=int)
-    parser.add_argument('datastore',
+    parser.add_argument('-d', '--datastore', default='GET_ALL__',
                         help='The name of the datastore to check')
 
     parsed_args = parser.parse_args()
@@ -159,21 +188,25 @@ def main():
     os.environ['GOVC_INSECURE'] = str(_valid_config['insecure'])
 
     try:
-        output = subprocess.check_output(command, shell=True, text=True, stderr=subprocess.STDOUT)
+        sp_out = subprocess.check_output(command, shell=True, text=True, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as exc:
         print("VSPHERE_DATASTORE UNKNOWN: ", exc.output, end='', sep='')
         sys.exit(3)
 
-    _dsinfo = json.loads(output)
+    _dsinfo = json.loads(sp_out)
 
-    output = get_datastore_info(_dsinfo, _datastore, _warn_percent, _crit_percent)
-    if output["used_percent"] is not None:
-        print("VSPHERE_DATASTORE ", output['status_text'],  " Used: ",
-              output["used_percent"], "%", sep='')
-        sys.exit(output['status_code'])
+    if _datastore != 'GET_ALL__':
+        output = get_datastore_info(_dsinfo, _datastore, _warn_percent, _crit_percent)
+        if output["used_percent"] is not None:
+            print("VSPHERE_DATASTORE ", output['status_text'],  " Used: ",
+                output["used_percent"], "%", sep='')
+            sys.exit(output['status_code'])
+        else:
+            print("VSPHERE_DATASTORE ", output['status_text'], sep='')
+            sys.exit(output['status_code'])
     else:
-        print("VSPHERE_DATASTORE ", output['status_text'], sep='')
-        sys.exit(output['status_code'])
+        get_all_datastore_info(_dsinfo, _warn_percent, _crit_percent)
+
 
 if __name__ == "__main__":
 
