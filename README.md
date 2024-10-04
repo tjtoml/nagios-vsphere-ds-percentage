@@ -1,6 +1,6 @@
 [![Pylint](https://github.com/tjtoml/nagios-vsphere-ds-percentage/actions/workflows/pylint.yml/badge.svg?event=push)](https://github.com/tjtoml/nagios-vsphere-ds-percentage/actions/workflows/pylint.yml)
 # nagios-vsphere-ds-percentage
-```  
+```shell 
 usage: vsphere_ds_percentage.py [-h] [-H HOST] [-u USERNAME] [-p PASSWORD] [-k] [-f FILE] [-w WARN] [-c CRIT]
                                 [-d DATASTORE]
 
@@ -45,16 +45,16 @@ You can pass configuration directly as arguments, by using a config file ([examp
 ## Examples:
 
 ### Check a single datastore, WARN at 75% used and CRIT at 90%, do not check vSphere SSL certificate for validity:
-```
+```shell
 vsphere_ds_percentage.py -d SINGLE_DATASTORE -w 75 -c 90 -k --username="someUser@vsphere.local" \
 password="thisIs@passw0rd" --host="vsphere.local"
 VSPHERE_DATASTORE OK: SINGLE_DATASTORE Used: 43.9%
 echo $?
-0 $OK
+0 #OK
 ```
 ### Check a single datastore, WARN at 75% used and CRIT at 90%, check vSphere SSL certificate for validity, using config file:
 
-```
+```shell
 cat /home/someuser/config.yml
 ---
 GOVC_URL: vsphere.local
@@ -69,7 +69,7 @@ echo $?
 ```
 
 ### Check all datastores, WARN at 75% used and CRIT at 90%, using config file
-```
+```shell
 vsphere_ds_percentage.py -w 75 -c 90 -f /home/someuser/config.yml
 VSPHERE_DATASTORE CRITICAL: CRITICAL-DATASTORE Used: 93.1%
 VSPHERE_DATASTORE OK: OK-DATASTORE-1 Used: 52.8%
