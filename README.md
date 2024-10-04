@@ -44,7 +44,7 @@ You can pass configuration directly as arguments, by using a config file ([examp
 
 ## Examples:
 
-### Check a single datastore, WARN at 75% used and CRIT at 90%, do not check vSphere SSL certificate for validity:
+#### Check a single datastore, WARN at 75% used and CRIT at 90%, do not check vSphere SSL certificate for validity:
 ```shell
 vsphere_ds_percentage.py -d SINGLE_DATASTORE -w 75 -c 90 -k --username="someUser@vsphere.local" \
 password="thisIs@passw0rd" --host="vsphere.local"
@@ -52,7 +52,7 @@ VSPHERE_DATASTORE OK: SINGLE_DATASTORE Used: 43.9%
 echo $?
 0 #OK
 ```
-### Check a single datastore, WARN at 75% used and CRIT at 90%, check vSphere SSL certificate for validity, using config file:
+#### Check a single datastore, WARN at 75% used and CRIT at 90%, check vSphere SSL certificate for validity, using config file:
 
 ```shell
 cat /home/someuser/config.yml
@@ -68,7 +68,7 @@ echo $?
 1 #WARNING
 ```
 
-### Check all datastores, WARN at 75% used and CRIT at 90%, using config file
+#### Check all datastores, WARN at 75% used and CRIT at 90%, using config file
 ```shell
 vsphere_ds_percentage.py -w 75 -c 90 -f /home/someuser/config.yml
 VSPHERE_DATASTORE CRITICAL: CRITICAL-DATASTORE Used: 93.1%
@@ -83,3 +83,6 @@ echo $?
 ``` 
 NOTE: Checking all datastores will return the highest status. In the example above, there is one CRITICAL datastore, but the entire nagios service will be critical.
 
+## Contributing
+
+Pull requests welcomed! 
