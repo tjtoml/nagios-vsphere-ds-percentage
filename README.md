@@ -1,5 +1,9 @@
 [![Pylint](https://github.com/tjtoml/nagios-vsphere-ds-percentage/actions/workflows/pylint.yml/badge.svg?event=push)](https://github.com/tjtoml/nagios-vsphere-ds-percentage/actions/workflows/pylint.yml)
 # nagios-vsphere-ds-percentage
+
+## Description:
+A check plugin for [nagios](https://www.nagios.org) that will check the percentage used of a vSphere datastore. Written in `python3`, utilizes [`govc`](https://github.com/vmware/govmomi/tree/main/govc) to communicate with vSphere. I wrote this because the vSphere plugin that came with Nagios XI did not fit my company's requirements for a simple check to see if a vSphere datastore's usage exceeded a certain threshold.  
+
 ```shell 
 usage: vsphere_ds_percentage.py [-h] [-H HOST] [-u USERNAME] [-p PASSWORD] [-k] [-f FILE] [-w WARN] [-c CRIT]
                                 [-d DATASTORE]
