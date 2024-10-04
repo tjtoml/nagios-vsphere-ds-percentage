@@ -42,17 +42,20 @@ Should work like any other `nagios` check plugin.
 
 You can pass configuration directly as arguments, by using a config file ([example](config.yaml.example)), by setting the relevant `GOVC_` environment variables for your `nagios` user, or any combination of these. If a configuration option is set in multiple ways, an argument will override a config file directive, which will override an environment variable.
 
-####Examples:
+## Examples:
+
+### Check a single datastore, WARN at 75% used and CRIT at 90%, do not check vSphere SSL certificate for validity:
 ```
-# Check a single datastore, WARN at 75% used and CRIT at 90%, do not check vSphere SSL certificate for validity:
-vsphere_ds_percentage.py -d SINGLE_DATASTORE -w 75 -c 90 -k --username="someUser@vsphere.local" password="thisIs@passw0rd" --host="vsphere.local"
+vsphere_ds_percentage.py -d SINGLE_DATASTORE -w 75 -c 90 -k --username="someUser@vsphere.local" \
+password="thisIs@passw0rd" --host="vsphere.local"
 VSPHERE_DATASTORE OK: SINGLE_DATASTORE Used: 43.9%
 echo $?
-0
+0 $OK
+```
+### Check a single datastore, WARN at 75% used and CRIT at 90%, check vSphere SSL certificate for validity, using config file:
 
-# Check a single datastore, WARN at 75% used and CRIT at 90%, check vSphere SSL certificate for validity, using config file:
+```
 cat /home/someuser/config.yml
-
 ---
 GOVC_URL: vsphere.local
 GOVC_USERNAME: someUser@vsphere.local
@@ -62,9 +65,11 @@ GOVC_INSECURE: 0
 vsphere_ds_percentage.py -d OTHER_DATASTORE -w 75 -c 90 -f /home/someuser/config.yml
 VSPHERE_DATASTORE WARNING: SINGLE_DATASTORE Used: 76.9%
 echo $?
-1
+1 #WARNING
+```
 
-# Check all datastores, WARN at 75% used and CRIT at 90%, using config file
+### Check all datastores, WARN at 75% used and CRIT at 90%, using config file
+```
 vsphere_ds_percentage.py -w 75 -c 90 -f /home/someuser/config.yml
 VSPHERE_DATASTORE CRITICAL: CRITICAL-DATASTORE Used: 93.1%
 VSPHERE_DATASTORE OK: OK-DATASTORE-1 Used: 52.8%
@@ -74,8 +79,7 @@ VSPHERE_DATASTORE OK: OK-DATASTORE-4 Used: 47.8%
 VSPHERE_DATASTORE WARNING: WARNING-DATASTORE Used: 83.3%
 VSPHERE_DATASTORE OK: OK-DATASTORE-5 Used: 64.2%
 echo $?
-2 
-# NOTE: Checking all datastores will return the highest status. 
-# In the example above, there is one CRITICAL datastore, but the entire nagios service will be critical.
+2 #CRITICAL
+``` 
+NOTE: Checking all datastores will return the highest status. In the example above, there is one CRITICAL datastore, but the entire nagios service will be critical.
 
-```
